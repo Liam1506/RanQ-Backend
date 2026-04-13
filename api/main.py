@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 
 
 app = FastAPI(
-    title="Vercel + FastAPI",
+    title="Vercel + FastAPI Test",
     description="Vercel + FastAPI",
     version="1.0.0",
 )
