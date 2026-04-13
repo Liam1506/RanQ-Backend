@@ -8,3 +8,6 @@ dependencies = [
   "bcrypt",
   "pydantic[email]",
 ]
+
+[tool.setuptools.packages.find]
+include = ["auth*", "db*", "public*"]
