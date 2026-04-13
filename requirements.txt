@@ -1,4 +1,0 @@
-fastapi
-uvicorn
-bcrypt
-pydantic[email]
