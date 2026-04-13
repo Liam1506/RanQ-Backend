@@ -26,10 +26,11 @@ pip install -r requirements.txt
 
 ## Run
 
+Must be run from API folder, due to deployment paths
+
 ```bash
 cd api
-python api/main.py
+python main.py
 ```
 
-The server starts at [http://localhost:5001](http://localhost:5001).  
-Interactive API docs are available at [http://localhost:5001/docs](http://localhost:5001/docs).
+The server starts at [http://localhost:5001](http://localhost:5001)
