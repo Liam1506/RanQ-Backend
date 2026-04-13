@@ -3,12 +3,15 @@ from fastapi.responses import HTMLResponse
 from fastapi import Depends, FastAPI
 from db.connect import get_db
 from db.fetchData import getData
+from auth.router import router as auth_router
 
 app = FastAPI(
     title="Vercel + FastAPI Test",
     description="Vercel + FastAPI",
     version="1.0.0",
 )
+
+app.include_router(auth_router)
 
 
 @app.get("/api/data")
