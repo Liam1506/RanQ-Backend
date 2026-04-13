@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-
+from fastapi import Depends, FastAPI
+from db.connect import get_db
+from db.fetchData import getData
 
 app = FastAPI(
     title="Vercel + FastAPI Test",
@@ -10,17 +12,9 @@ app = FastAPI(
 
 
 @app.get("/api/data")
-def get_sample_data():
-    return {
-        "data": [
-            {"id": 3, "name": "Hallo 123", "value": 300},
-            {"id": 1, "name": "Sample Item 1", "value": 100},
-            {"id": 2, "name": "Sample Item 2", "value": 200},
-            {"id": 3, "name": "Sample Item 3", "value": 300}
-        ],
-        "total": 3,
-        "timestamp": "2024-01-01T00:00:00Z"
-    }
+def get_sample_data(db = Depends(get_db)):
+    return getData(db)
+    
 
 
 @app.get("/api/items/{item_id}")
