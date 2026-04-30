@@ -6,6 +6,7 @@ DB_PATH = "/tmp/webEng.db" if os.environ.get("VERCEL") else "webEng.db"
 def get_db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
     try:
         yield conn
     finally:
