@@ -1,4 +1,5 @@
 import uuid
+import os
 from sqlite3 import Connection
 
 from auth.sendVerifyMail import send_verify_mail
@@ -45,21 +46,25 @@ def get_user_by_email(conn: Connection, email: str):
     return dict(row) if row else None
 
 def insert_user(conn: Connection, username: str, email: str, hashed_password: str):
-    create_verify_table(conn)
     user_id = str(uuid.uuid4())
-    verify_hash = str(uuid.uuid4())
-    conn.execute(
-        "INSERT INTO users (id, username, email, password, verified, admin) VALUES (?, ?, ?, ?, ?, ?)",
-        (user_id, username, email, hashed_password, False, False),
-    )
+    skip_verification = os.environ.get("SKIP_EMAIL_VERIFICATION", "false").lower() == "true"
 
     conn.execute(
-        "INSERT INTO verificationWaitlist (id, verifyId) VALUES (?, ?)",
-        (user_id, verify_hash),
+        "INSERT INTO users (id, username, email, password, verified, admin) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, username, email, hashed_password, True if skip_verification else False, False),
     )
-    send_verify_mail(email, user_id, verify_hash)
+
+    if not skip_verification:
+        create_verify_table(conn)
+        verify_hash = str(uuid.uuid4())
+        conn.execute(
+            "INSERT INTO verificationWaitlist (id, verifyId) VALUES (?, ?)",
+            (user_id, verify_hash),
+        )
+        send_verify_mail(email, user_id, verify_hash)
+
     conn.commit()
-    return user_id 
+    return user_id
 
 
 
