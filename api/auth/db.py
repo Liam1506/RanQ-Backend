@@ -1,6 +1,8 @@
 import uuid
 from sqlite3 import Connection
 
+from auth.sendVerifyMail import send_verify_mail
+
 def create_users_table(conn: Connection):
     conn.execute(
         """
@@ -45,7 +47,7 @@ def get_user_by_email(conn: Connection, email: str):
 def insert_user(conn: Connection, username: str, email: str, hashed_password: str):
     create_verify_table(conn)
     user_id = str(uuid.uuid4())
-    
+    verify_hash = str(uuid.uuid4())
     conn.execute(
         "INSERT INTO users (id, username, email, password, verified, admin) VALUES (?, ?, ?, ?, ?, ?)",
         (user_id, username, email, hashed_password, False, False),
@@ -53,8 +55,9 @@ def insert_user(conn: Connection, username: str, email: str, hashed_password: st
 
     conn.execute(
         "INSERT INTO verificationWaitlist (id, verifyId) VALUES (?, ?)",
-        (user_id, str(uuid.uuid4())),
+        (user_id, verify_hash),
     )
+    send_verify_mail(email, user_id, verify_hash)
     conn.commit()
     return user_id 
 

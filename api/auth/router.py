@@ -47,7 +47,7 @@ def login(body: LoginRequest, db=Depends(get_db)):
     return {"message": "Login successful", "user": {"id": user["id"], "username": user["username"], "email": user["email"]}}
 
 
-@router.post("/verify")
+@router.get("/verify")
 def verify(userId: str, verifyId: str, db=Depends(get_db)):
     if not verify_user(db, userId, verifyId):
         raise HTTPException(status_code=400, detail="Invalid or expired verification link")

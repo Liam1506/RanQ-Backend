@@ -7,6 +7,7 @@ dependencies = [
   "uvicorn>=0.34.0",
   "bcrypt",
   "pydantic[email]",
+  "resend",
 ]
 
 [tool.setuptools.packages.find]
