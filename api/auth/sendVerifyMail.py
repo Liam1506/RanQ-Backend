@@ -1,8 +1,11 @@
 import resend
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 resend.api_key = os.environ["RESEND_API_KEY"]
 
