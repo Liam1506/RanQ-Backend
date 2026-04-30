@@ -8,6 +8,7 @@ dependencies = [
   "bcrypt",
   "pydantic[email]",
   "resend",
+  "python-dotenv",
 ]
 
 [tool.setuptools.packages.find]
