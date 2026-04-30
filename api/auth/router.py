@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import bcrypt
 
 from db.connect import get_db
-from auth.db import create_users_table, get_user_by_username, get_user_by_email, insert_user
+from auth.db import create_users_table, get_user_by_username, get_user_by_email, insert_user, verify_user
 from auth.schemas import RegisterRequest, LoginRequest, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -45,3 +45,10 @@ def login(body: LoginRequest, db=Depends(get_db)):
         )
 
     return {"message": "Login successful", "user": {"id": user["id"], "username": user["username"], "email": user["email"]}}
+
+
+@router.post("/verify")
+def verify(userId: str, verifyId: str, db=Depends(get_db)):
+    if not verify_user(db, userId, verifyId):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+    return {"message": "Account verified successfully"}

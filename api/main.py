@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from fastapi import Depends, FastAPI
 from db.connect import get_db
 from db.fetchData import getData
+from auth.verifyUser import auth_user
 from auth.router import router as auth_router
 
 app = FastAPI(
@@ -13,11 +14,20 @@ app = FastAPI(
 
 app.include_router(auth_router)
 
+def verify_user(userId: str, db=Depends(get_db)):
+    return auth_user(db, userId)
+
 
 @app.get("/api/data")
-def get_sample_data(db = Depends(get_db)):
-    return getData(db)
+def get_sample_data(
+    db = Depends(get_db), 
+    user_id: str = Depends(verify_user) # Move this here!
+):
+    # Now you can use user_id or db freely
+    return "good"
     
+
+
 
 
 @app.get("/api/items/{item_id}")

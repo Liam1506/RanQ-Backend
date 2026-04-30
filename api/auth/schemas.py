@@ -9,7 +9,14 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class VerifyList(BaseModel):
+    id: str
+    verId: str
+
+
 class UserResponse(BaseModel):
-    id: int
+    id: str
     username: str
     email: str
+    verified: bool
+    admin: bool
