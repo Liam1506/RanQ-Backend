@@ -9,10 +9,10 @@ def auth_user(client: Client, id: str):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     
-    row = response.data[0]
-
-    if not row:
+    if not response.data:
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+    row = response.data[0]
     if not row["verified"]:
         raise HTTPException(status_code=402, detail="Unverified")
     return id
