@@ -43,8 +43,21 @@ def login(body: LoginRequest):
     return {"message": "Login successful", "user": {"id": user["id"], "username": user["username"], "email": user["email"]}}
 
 
-@router.get("/verify")
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse
+
+@router.get("/verify", response_class=HTMLResponse)
 def verify(userId: str, verifyId: str):
     if not verify_user(db, userId, verifyId):
         raise HTTPException(status_code=400, detail="Invalid or expired verification link")
-    return {"message": "Account verified successfully"}
+    
+    return """
+    <html>
+        <head>
+            <meta http-equiv="refresh" content="2;url=https://ranq.dev" />
+        </head>
+        <body>
+            <p>Account verified successfully. Redirecting to ranq.dev...</p>
+        </body>
+    </html>
+    """
