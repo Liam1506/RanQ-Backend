@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from db.connect import db
-from auth.verifyUser import auth_user
+from auth.authDb import auth_db
 from auth.router import router as auth_router
 
 from polls.router import router as polls_router
@@ -28,7 +28,7 @@ app.include_router(polls_router)
 
 
 def verify_user(userId: str):
-    return auth_user(db, userId)
+    return auth_db(db, userId)
 
 
 

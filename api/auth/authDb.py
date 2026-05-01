@@ -2,7 +2,7 @@ from supabase import Client
 from fastapi import HTTPException
 
 
-def auth_user(client: Client, id: str):
+def auth_db(client: Client, id: str):
     try:
         response = client.table("users").select("verified, admin").eq("id", id).execute()
     except Exception as e:

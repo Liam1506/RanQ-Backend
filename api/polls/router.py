@@ -19,11 +19,11 @@ def delete(payload: PollCreate, user: str = Depends(auth_user)):
 
 
 @router.get("/get", status_code=status.HTTP_200_OK, response_model=PollResponse)
-def get(question: str, user: str = Depends(auth_user)):
+def get(question: str):
     return get_poll(db, question)
 
 @router.get("/getAll", status_code=status.HTTP_200_OK, response_model=list[PollResponse])
-def get_all(user: str = Depends(auth_user)):
+def get_all():
     return get_all_polls(db)
 
 

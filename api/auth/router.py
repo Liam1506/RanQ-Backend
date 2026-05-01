@@ -5,6 +5,8 @@ from db.connect import db
 from auth.db import get_user_by_username, get_user_by_email, insert_user, verify_user
 from auth.schemas import RegisterRequest, LoginRequest, UserResponse
 
+from auth.authDb import auth_db
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
@@ -39,8 +41,8 @@ def login(body: LoginRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
-
-    return {"message": "Login successful", "user": {"id": user["id"], "username": user["username"], "email": user["email"]}}
+    
+    return auth_db(db, user["id"])
 
 
 from fastapi import APIRouter, HTTPException
