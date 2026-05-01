@@ -4,6 +4,8 @@ from db.connect import db
 from auth.verifyUser import auth_user
 from auth.router import router as auth_router
 
+from polls.router import router as polls_router
+
 app = FastAPI(
     title="Vercel + FastAPI Test",
     description="Vercel + FastAPI",
@@ -11,6 +13,10 @@ app = FastAPI(
 )
 
 app.include_router(auth_router)
+
+
+app.include_router(polls_router)
+
 
 def verify_user(userId: str):
     return auth_user(db, userId)

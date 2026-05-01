@@ -20,3 +20,30 @@ class UserResponse(BaseModel):
     email: str
     verified: bool
     admin: bool
+
+
+class PollCreate(BaseModel):
+    question: str
+    options: list[str]
+
+class OptionResponse(BaseModel):
+    id: str
+    option: str
+    votes: int
+
+class PollResponse(BaseModel):
+    id: str
+    question: str
+    created_by: str
+    approved: bool
+    options: list[OptionResponse] = []
+
+class VoteCreate(BaseModel):
+    poll_id: str
+    option_id: str
+
+class VoteResponse(BaseModel):
+    id: str
+    poll_id: str
+    user_id: str
+    option_id: str

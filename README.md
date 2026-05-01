@@ -35,3 +35,7 @@ python main.py
 ```
 
 The server starts at [http://localhost:5001](http://localhost:5001)
+
+## API Endpoints
+
+All available endpoints and their request/response schemas can be explored interactively at [http://localhost:5001/docs](http://localhost:5001/docs).
