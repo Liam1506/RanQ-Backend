@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import bcrypt
 
 from db.connect import get_db
-from auth.db import create_users_table, get_user_by_username, get_user_by_email, insert_user, verify_user
+from auth.db import get_user_by_username, get_user_by_email, insert_user, verify_user
 from auth.schemas import RegisterRequest, LoginRequest, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -18,8 +18,6 @@ def verify_password(password: str, hashed: str) -> bool:
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(body: RegisterRequest, db=Depends(get_db)):
-    create_users_table(db)
-
     if get_user_by_username(db, body.username):
         raise HTTPException(status_code=400, detail="Username already taken")
 
@@ -35,8 +33,6 @@ def register(body: RegisterRequest, db=Depends(get_db)):
 
 @router.post("/login")
 def login(body: LoginRequest, db=Depends(get_db)):
-    create_users_table(db)
-
     user = get_user_by_username(db, body.username)
     if not user or not verify_password(body.password, user["password"]):
         raise HTTPException(

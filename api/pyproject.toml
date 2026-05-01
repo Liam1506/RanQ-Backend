@@ -9,7 +9,7 @@ dependencies = [
   "pydantic[email]",
   "resend",
   "python-dotenv",
-  "libsql-client",
+  "supabase",
 ]
 
 [tool.setuptools.packages.find]

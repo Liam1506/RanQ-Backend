@@ -2,7 +2,6 @@ from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from fastapi import Depends, FastAPI
 from db.connect import get_db
-from db.fetchData import getData
 from auth.verifyUser import auth_user
 from auth.router import router as auth_router
 
@@ -304,7 +303,6 @@ def read_root():
                 <a href="/" class="logo">Vercel + FastAPI</a>
                 <div class="nav-links">
                     <a href="/docs">API Docs</a>
-                    <a href="/api/data">API</a>
                 </div>
             </nav>
         </header>
@@ -328,13 +326,6 @@ def read_root():
                     <p>Explore this API's endpoints with the interactive Swagger UI. Test requests and view response schemas in real-time.</p>
                     <a href="/docs">Open Swagger UI →</a>
                 </div>
-
-                <div class="card">
-                    <h3>Sample Data</h3>
-                    <p>Access sample JSON data through our REST API. Perfect for testing and development purposes.</p>
-                    <a href="/api/data">Get Data →</a>
-                </div>
-
             </div>
         </main>
     </body>

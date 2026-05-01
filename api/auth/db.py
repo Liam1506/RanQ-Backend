@@ -1,85 +1,50 @@
 import uuid
 import os
-from sqlite3 import Connection
+from supabase import Client
 
 from auth.sendVerifyMail import send_verify_mail
 
-def create_users_table(conn: Connection):
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id       TEXT    PRIMARY KEY,
-            username TEXT    NOT NULL UNIQUE,
-            email    TEXT    NOT NULL UNIQUE,
-            password TEXT    NOT NULL,
-            verified BOOl    NOT NULL,
-            admin BOOl    NOT NULL
-        )
-        """
-    )
-    conn.commit()
 
-def create_verify_table(conn: Connection):
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS verificationWaitlist (
-            id       TEXT    NOT NULL,
-            verifyId TEXT    PRIMARY KEY
-        )
-        """
-    )
-    conn.commit()
+def get_user_by_username(client: Client, username: str):
+    response = client.table("users").select("id, username, email, password, verified, admin").eq("username", username).execute()
+    return response.data[0] if response.data else None
 
 
-def get_user_by_username(conn: Connection, username: str):
-    row = conn.execute(
-        "SELECT id, username, email, password, verified, admin FROM users WHERE username = ?",
-        (username,),
-    ).fetchone()
-    return dict(row) if row else None
+def get_user_by_email(client: Client, email: str):
+    response = client.table("users").select("id, username, email, password, verified, admin").eq("email", email).execute()
+    return response.data[0] if response.data else None
 
-def get_user_by_email(conn: Connection, email: str):
-    row = conn.execute(
-        "SELECT id, username, email, password, verified, admin FROM users WHERE email = ?",
-        (email,),
-    ).fetchone()
-    return dict(row) if row else None
 
-def insert_user(conn: Connection, username: str, email: str, hashed_password: str):
+def insert_user(client: Client, username: str, email: str, hashed_password: str):
     user_id = str(uuid.uuid4())
     skip_verification = os.environ.get("SKIP_EMAIL_VERIFICATION", "false").lower() == "true"
 
-    conn.execute(
-        "INSERT INTO users (id, username, email, password, verified, admin) VALUES (?, ?, ?, ?, ?, ?)",
-        (user_id, username, email, hashed_password, True if skip_verification else False, False),
-    )
+    client.table("users").insert({
+        "id": user_id,
+        "username": username,
+        "email": email,
+        "password": hashed_password,
+        "verified": True if skip_verification else False,
+        "admin": False,
+    }).execute()
 
     if not skip_verification:
-        create_verify_table(conn)
         verify_hash = str(uuid.uuid4())
-        conn.execute(
-            "INSERT INTO verificationWaitlist (id, verifyId) VALUES (?, ?)",
-            (user_id, verify_hash),
-        )
+        client.table("verificationWaitlist").insert({
+            "id": user_id,
+            "verifyId": verify_hash,
+        }).execute()
         send_verify_mail(email, user_id, verify_hash)
 
-    conn.commit()
     return user_id
 
 
+def verify_user(client: Client, userId: str, verifyId: str):
+    response = client.table("verificationWaitlist").select("id").eq("id", userId).eq("verifyId", verifyId).execute()
 
-def verify_user(conn: Connection, userId: str, verifyId: str):
-    create_verify_table(conn)
-
-    row = conn.execute(
-        "SELECT 1 FROM verificationWaitlist WHERE id = ? AND verifyId = ?",
-        (userId, verifyId),
-    ).fetchone()
-
-    if row is None:
+    if not response.data:
         return False
 
-    conn.execute("UPDATE users SET verified = 1 WHERE id = ?", (userId,))
-    conn.execute("DELETE FROM verificationWaitlist WHERE id = ?", (userId,))
-    conn.commit()
+    client.table("users").update({"verified": True}).eq("id", userId).execute()
+    client.table("verificationWaitlist").delete().eq("id", userId).execute()
     return True

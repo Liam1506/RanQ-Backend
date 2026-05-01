@@ -1,11 +1,16 @@
-import sqlite3
+import os
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
+load_dotenv()
+
+_client = None
 
 
 def get_db():
-    conn = sqlite3.connect("webEng.db", check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
+    global _client
+    if _client is None:
+        url = os.environ["SUPABASE_URL"]
+        key = os.environ["SUPABASE_KEY"]
+        _client = create_client(url, key)
+    return _client
