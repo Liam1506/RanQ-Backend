@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 import bcrypt
 
-from db.connect import get_db
+from db.connect import db
 from auth.db import get_user_by_username, get_user_by_email, insert_user, verify_user
 from auth.schemas import RegisterRequest, LoginRequest, UserResponse
 
@@ -17,7 +17,7 @@ def verify_password(password: str, hashed: str) -> bool:
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(body: RegisterRequest, db=Depends(get_db)):
+def register(body: RegisterRequest):
     if get_user_by_username(db, body.username):
         raise HTTPException(status_code=400, detail="Username already taken")
 
@@ -32,7 +32,7 @@ def register(body: RegisterRequest, db=Depends(get_db)):
 
 
 @router.post("/login")
-def login(body: LoginRequest, db=Depends(get_db)):
+def login(body: LoginRequest):
     user = get_user_by_username(db, body.username)
     if not user or not verify_password(body.password, user["password"]):
         raise HTTPException(
@@ -44,7 +44,7 @@ def login(body: LoginRequest, db=Depends(get_db)):
 
 
 @router.get("/verify")
-def verify(userId: str, verifyId: str, db=Depends(get_db)):
+def verify(userId: str, verifyId: str):
     if not verify_user(db, userId, verifyId):
         raise HTTPException(status_code=400, detail="Invalid or expired verification link")
     return {"message": "Account verified successfully"}

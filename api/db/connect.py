@@ -1,16 +1,7 @@
 import os
-from supabase import create_client, Client
+from supabase import create_client
 from dotenv import load_dotenv
 
 load_dotenv()
 
-_client = None
-
-
-def get_db():
-    global _client
-    if _client is None:
-        url = os.environ["SUPABASE_URL"]
-        key = os.environ["SUPABASE_KEY"]
-        _client = create_client(url, key)
-    return _client
+db = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])

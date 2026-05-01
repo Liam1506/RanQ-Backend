@@ -1,7 +1,6 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from fastapi import Depends, FastAPI
-from db.connect import get_db
+from db.connect import db
 from auth.verifyUser import auth_user
 from auth.router import router as auth_router
 
@@ -13,7 +12,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 
-def verify_user(userId: str, db=Depends(get_db)):
+def verify_user(userId: str):
     return auth_user(db, userId)
 
 
