@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 class RegisterRequest(BaseModel):
@@ -37,6 +38,7 @@ class PollResponse(BaseModel):
     created_by: str
     approved: bool
     options: list[OptionResponse] = []
+    voted_option_id: Optional[str] = None
 
 class VoteCreate(BaseModel):
     poll_id: str

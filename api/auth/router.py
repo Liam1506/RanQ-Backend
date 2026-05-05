@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import HTMLResponse
 import bcrypt
 
 from db.connect import db
-from auth.db import get_user_by_username, get_user_by_email, insert_user, verify_user
+from auth.db import get_user_by_username, get_user_by_email, get_user_by_id, insert_user, verify_user
 from auth.schemas import RegisterRequest, LoginRequest, UserResponse
 
 from auth.authDb import auth_db
@@ -45,8 +46,14 @@ def login(body: LoginRequest):
     return auth_db(db, user["id"])
 
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse
+@router.get("/status")
+def get_status(userId: str):
+    user = get_user_by_id(db, userId)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return { "verified": user["verified"] }
+
+
 
 @router.get("/verify", response_class=HTMLResponse)
 def verify(userId: str, verifyId: str):
