@@ -39,10 +39,14 @@ def get_all_polls(client: Client, user_id: str):
         return []
 
     poll_ids = [p["id"] for p in polls.data]
+    creator_ids = list({p["created_by"] for p in polls.data})
 
     options = client.table("options").select("*").in_("poll_id", poll_ids).execute()
     votes = client.table("poll_votes").select("option_id, poll_id").in_("poll_id", poll_ids).execute()
     user_votes = client.table("poll_votes").select("poll_id, option_id").in_("poll_id", poll_ids).eq("user_id", user_id).execute()
+    users = client.table("users").select("id, username").in_("id", creator_ids).execute()
+
+    username_by_id: dict[str, str] = {u["id"]: u["username"] for u in users.data}
 
     vote_counts: dict[str, int] = {}
     for v in votes.data:
@@ -59,6 +63,7 @@ def get_all_polls(client: Client, user_id: str):
     for poll in polls.data:
         poll["options"] = options_by_poll.get(poll["id"], [])
         poll["voted_option_id"] = user_vote_by_poll.get(poll["id"])
+        poll["creator_username"] = username_by_id.get(poll["created_by"])
 
     return polls.data
 

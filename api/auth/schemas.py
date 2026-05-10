@@ -36,6 +36,8 @@ class PollResponse(BaseModel):
     id: str
     question: str
     created_by: str
+    creator_username: Optional[str] = None
+    created_at: Optional[str] = None
     approved: bool
     options: list[OptionResponse] = []
     voted_option_id: Optional[str] = None
