@@ -52,7 +52,7 @@ def get(question: str, user: str = Depends(auth_user)):
     "/getAll", status_code=status.HTTP_200_OK, response_model=list[PollResponse]
 )
 def get_all(user: str = Depends(auth_user)):
-    return get_all_polls(db)
+    return get_all_polls(db, user)
 
 
 @router.post("/vote", status_code=status.HTTP_201_CREATED, response_model=VoteResponse)

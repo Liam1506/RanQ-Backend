@@ -5,6 +5,11 @@ from supabase import Client
 from auth.sendVerifyMail import send_verify_mail
 
 
+def get_user_by_id(client: Client, user_id: str):
+    response = client.table("users").select("id, username, email, verified, admin").eq("id", user_id).execute()
+    return response.data[0] if response.data else None
+
+
 def get_user_by_username(client: Client, username: str):
     response = client.table("users").select("id, username, email, password, verified, admin").eq("username", username).execute()
     return response.data[0] if response.data else None
