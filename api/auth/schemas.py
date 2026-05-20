@@ -1,13 +1,16 @@
 from pydantic import BaseModel, EmailStr
 
+
 class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
     password: str
 
+
 class LoginRequest(BaseModel):
     username: str
     password: str
+
 
 class VerifyList(BaseModel):
     id: str
@@ -26,10 +29,12 @@ class PollCreate(BaseModel):
     question: str
     options: list[str]
 
+
 class OptionResponse(BaseModel):
     id: str
     option: str
     votes: int
+
 
 class PollResponse(BaseModel):
     id: str
@@ -38,12 +43,53 @@ class PollResponse(BaseModel):
     approved: bool
     options: list[OptionResponse] = []
 
+
 class VoteCreate(BaseModel):
     poll_id: str
     option_id: str
+
 
 class VoteResponse(BaseModel):
     id: str
     poll_id: str
     user_id: str
     option_id: str
+
+class CommentResponse(BaseModel):
+    id: str
+    poll_id: str
+    created_by: str
+    content: str
+
+
+class CommentCreate(BaseModel):
+    poll_id: str
+    comment: str
+
+
+class AllCommentsResponse(BaseModel):
+    id: str
+    created_by: str
+    poll_id: str
+    content: str
+
+
+class AllCommentsCreate(BaseModel):
+    poll_id: str
+
+class RedditVoteResponse(BaseModel):
+    id: str
+    user_id: str
+    poll_id: str
+    voting_score: int
+
+class RedditVoteCreate(BaseModel):
+    poll_id: str
+    user_id: str
+    voting_score: int
+
+class RedditScoreCreate(BaseModel):
+    poll_id: str
+
+class RedditScoreResponse(BaseModel):
+    total_score: int
