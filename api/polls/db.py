@@ -60,9 +60,22 @@ def get_all_polls(client: Client, user_id: str):
     creator_ids = list({p["created_by"] for p in polls.data})
 
     options = client.table("options").select("*").in_("poll_id", poll_ids).execute()
-    votes = client.table("poll_votes").select("option_id, poll_id").in_("poll_id", poll_ids).execute()
-    user_votes = client.table("poll_votes").select("poll_id, option_id").in_("poll_id", poll_ids).eq("user_id", user_id).execute()
-    users = client.table("users").select("id, username").in_("id", creator_ids).execute()
+    votes = (
+        client.table("poll_votes")
+        .select("option_id, poll_id")
+        .in_("poll_id", poll_ids)
+        .execute()
+    )
+    user_votes = (
+        client.table("poll_votes")
+        .select("poll_id, option_id")
+        .in_("poll_id", poll_ids)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    users = (
+        client.table("users").select("id, username").in_("id", creator_ids).execute()
+    )
 
     username_by_id: dict[str, str] = {u["id"]: u["username"] for u in users.data}
 
@@ -70,7 +83,9 @@ def get_all_polls(client: Client, user_id: str):
     for v in votes.data:
         vote_counts[v["option_id"]] = vote_counts.get(v["option_id"], 0) + 1
 
-    user_vote_by_poll: dict[str, str] = {v["poll_id"]: v["option_id"] for v in user_votes.data}
+    user_vote_by_poll: dict[str, str] = {
+        v["poll_id"]: v["option_id"] for v in user_votes.data
+    }
 
     options_by_poll: dict[str, list] = {}
     for opt in options.data:
@@ -181,6 +196,7 @@ def get_all_comments_for(client: Client, poll_id: str):
 
     return response.data
 
+
 def reddit_vote_poll(client: Client, poll_id: str, score: int, user_id: str):
     poll = client.table("polls").select("id").eq("id", poll_id).execute()
     if not poll.data:
@@ -204,11 +220,12 @@ def reddit_vote_poll(client: Client, poll_id: str, score: int, user_id: str):
 
     return response.data[0]
 
+
 def get_reddit_score_for(client: Client, poll_id: str):
     poll = client.table("polls").select("id").eq("id", poll_id).execute()
     if not poll.data:
         raise HTTPException(status_code=404, detail="Poll not found")
-    
+
     response = (
         client.table("up_down_votes")
         .select("voting_score")
@@ -218,3 +235,20 @@ def get_reddit_score_for(client: Client, poll_id: str):
     total = sum(item["voting_score"] for item in response.data)
     print(total)
     return {"total_score": total}
+
+
+def approve_poll(client: Client, poll_id: str):
+    poll = client.table("polls").select("id").eq("id", poll_id).execute()
+    if not poll.data:
+        raise HTTPException(status_code=404, detail="Poll not found")
+
+    response = (
+        client.table("polls")
+        .update({"approved": True})
+        .eq("id", poll_id)
+        .execute()
+    )
+
+    data = response.data[0]
+    data["poll_id"] = data.pop("id")
+    return data

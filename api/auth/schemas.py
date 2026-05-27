@@ -59,6 +59,7 @@ class VoteResponse(BaseModel):
     user_id: str
     option_id: str
 
+
 class CommentResponse(BaseModel):
     id: str
     poll_id: str
@@ -81,19 +82,32 @@ class AllCommentsResponse(BaseModel):
 class AllCommentsCreate(BaseModel):
     poll_id: str
 
+
 class RedditVoteResponse(BaseModel):
     id: str
     user_id: str
     poll_id: str
     voting_score: int
 
+
 class RedditVoteCreate(BaseModel):
     poll_id: str
     user_id: str
     voting_score: int
 
+
 class RedditScoreCreate(BaseModel):
     poll_id: str
 
+
 class RedditScoreResponse(BaseModel):
     total_score: int
+
+
+class ApprovePollCreate(BaseModel):
+    poll_id: str
+
+
+class ApprovePollResponse(BaseModel):
+    poll_id: str
+    approved: bool

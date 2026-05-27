@@ -11,8 +11,10 @@ from auth.schemas import (
     VoteResponse,
     RedditVoteResponse,
     RedditVoteCreate,
-    RedditScoreCreate, 
-    RedditScoreResponse
+    RedditScoreCreate,
+    RedditScoreResponse,
+    ApprovePollResponse,
+    ApprovePollCreate
 )
 from db.connect import db
 from polls.db import (
@@ -25,6 +27,7 @@ from polls.db import (
     vote_poll,
     get_all_comments_for,
     reddit_vote_poll,
+    approve_poll
 )
 from auth.authUser import auth_user
 
@@ -75,14 +78,24 @@ def comment(payload: CommentCreate, user: str = Depends(auth_user)):
 def all_comments(payload: AllCommentsCreate, user: str = Depends(auth_user)):
     return get_all_comments_for(db, payload.poll_id)
 
+
 @router.post(
-    "/redditVote", status_code=status.HTTP_201_CREATED, response_model=RedditVoteResponse
+    "/redditVote",
+    status_code=status.HTTP_201_CREATED,
+    response_model=RedditVoteResponse,
 )
 def reddit_vote(payload: RedditVoteCreate, user: str = Depends(auth_user)):
     return reddit_vote_poll(db, payload.poll_id, payload.voting_score, user)
+
 
 @router.get(
     "/redditScore", status_code=status.HTTP_200_OK, response_model=RedditScoreResponse
 )
 def reddit_score(payload: RedditScoreCreate, user: str = Depends(auth_user)):
     return get_reddit_score_for(db, payload.poll_id)
+
+@router.post(
+    "/approvePoll", status_code=status.HTTP_200_OK, response_model=ApprovePollResponse
+)
+def approvePoll(payload: ApprovePollCreate, user: str = Depends(auth_user)):
+    return approve_poll(db, payload.poll_id)
