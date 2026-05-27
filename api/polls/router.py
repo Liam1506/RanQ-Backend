@@ -70,7 +70,7 @@ def comment(payload: CommentCreate, user: str = Depends(auth_user)):
     return comment_poll(db, payload.poll_id, payload.comment, user)
 
 
-@router.get(
+@router.post(
     "/getAllComments",
     status_code=status.HTTP_200_OK,
     response_model=list[AllCommentsResponse],
