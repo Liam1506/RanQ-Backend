@@ -52,7 +52,7 @@ def delete_poll(client: Client, question: str, created_by: str):
 
 
 def get_all_polls(client: Client, user_id: str):
-    polls = client.table("polls").select("*").order("created_at", desc=True).execute()
+    polls = client.table("polls").select("*").eq("approved", True).order("created_at", desc=True).execute()
     if not polls.data:
         return []
 
@@ -239,6 +239,31 @@ def get_reddit_score_for(client: Client, poll_id: str):
     total = sum(item["voting_score"] for item in response.data)
     print(total)
     return {"total_score": total}
+
+
+def get_unapproved_polls(client: Client):
+    polls = client.table("polls").select("*").eq("approved", False).order("created_at", desc=True).execute()
+    if not polls.data:
+        return []
+
+    poll_ids = [p["id"] for p in polls.data]
+    creator_ids = list({p["created_by"] for p in polls.data})
+
+    options = client.table("options").select("*").in_("poll_id", poll_ids).execute()
+    users = client.table("users").select("id, username").in_("id", creator_ids).execute()
+
+    username_by_id: dict[str, str] = {u["id"]: u["username"] for u in users.data}
+
+    options_by_poll: dict[str, list] = {}
+    for opt in options.data:
+        options_by_poll.setdefault(opt["poll_id"], []).append({**opt, "votes": 0})
+
+    for poll in polls.data:
+        poll["options"] = options_by_poll.get(poll["id"], [])
+        poll["voted_option_id"] = None
+        poll["creator_username"] = username_by_id.get(poll["created_by"])
+
+    return polls.data
 
 
 def approve_poll(client: Client, poll_id: str):

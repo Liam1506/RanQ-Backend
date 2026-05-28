@@ -27,9 +27,10 @@ from polls.db import (
     vote_poll,
     get_all_comments_for,
     reddit_vote_poll,
-    approve_poll
+    approve_poll,
+    get_unapproved_polls
 )
-from auth.authUser import auth_user
+from auth.authUser import auth_user, auth_admin
 
 router = APIRouter(prefix="/api/polls", tags=["polls"])
 
@@ -97,5 +98,12 @@ def reddit_score(payload: RedditScoreCreate, user: str = Depends(auth_user)):
 @router.post(
     "/approvePoll", status_code=status.HTTP_200_OK, response_model=ApprovePollResponse
 )
-def approvePoll(payload: ApprovePollCreate, user: str = Depends(auth_user)):
+def approvePoll(payload: ApprovePollCreate, user: str = Depends(auth_admin)):
     return approve_poll(db, payload.poll_id)
+
+
+@router.get(
+    "/getUnapproved", status_code=status.HTTP_200_OK, response_model=list[PollResponse]
+)
+def get_unapproved(user: str = Depends(auth_admin)):
+    return get_unapproved_polls(db)
