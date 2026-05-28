@@ -181,6 +181,7 @@ def comment_poll(client: Client, poll_id: str, comment: str, user_id: str):
     return response.data[0]
 
 
+# TODO add username
 def get_all_comments_for(client: Client, poll_id: str):
     poll = client.table("polls").select("id").eq("id", poll_id).execute()
     if not poll.data:
@@ -188,12 +189,15 @@ def get_all_comments_for(client: Client, poll_id: str):
 
     response = (
         client.table("comments")
-        .select("*")
+        .select("*, users!inner(username)")
         .eq("poll_id", poll_id)
         .order("created_at", desc=True)
         .execute()
     )
 
+    for data in response.data:
+        users = data.pop("users", None)
+        data["created_by"] = (users or {}).get("username")
     return response.data
 
 
@@ -243,10 +247,7 @@ def approve_poll(client: Client, poll_id: str):
         raise HTTPException(status_code=404, detail="Poll not found")
 
     response = (
-        client.table("polls")
-        .update({"approved": True})
-        .eq("id", poll_id)
-        .execute()
+        client.table("polls").update({"approved": True}).eq("id", poll_id).execute()
     )
 
     data = response.data[0]
