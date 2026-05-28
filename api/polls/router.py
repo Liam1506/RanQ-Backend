@@ -89,7 +89,7 @@ def reddit_vote(payload: RedditVoteCreate, user: str = Depends(auth_user)):
     return reddit_vote_poll(db, payload.poll_id, payload.voting_score, user)
 
 
-@router.get(
+@router.post(
     "/redditScore", status_code=status.HTTP_200_OK, response_model=RedditScoreResponse
 )
 def reddit_score(payload: RedditScoreCreate, user: str = Depends(auth_user)):
