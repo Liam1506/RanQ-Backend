@@ -34,7 +34,7 @@ from polls.db import (
     approve_poll,
     get_unapproved_polls,
 )
-from auth.authUser import auth_user, auth_admin
+from auth.authUser import auth_user, auth_admin, auth_user_with_role
 
 router = APIRouter(prefix="/api/polls", tags=["polls"])
 
@@ -123,5 +123,6 @@ def get_unapproved(user: str = Depends(auth_admin)):
 @router.delete(
     "/deleteVote", status_code=status.HTTP_200_OK, response_model=RemoveVoteResponse
 )
-def remove(payload: RemoveVoteCreate, user: str = Depends(auth_admin)):
-    return remove_vote(db, payload.poll_vote_id)
+def remove(payload: RemoveVoteCreate, user_role: tuple = Depends(auth_user_with_role)):
+    user, is_admin = user_role
+    return remove_vote(db, payload.poll_vote_id, user, is_admin)

@@ -339,10 +339,25 @@ def approve_poll(client: Client, poll_id: str):
     return data
 
 
-def remove_vote(client: Client, poll_vote_id: str):
-    poll_vote = client.table("poll_votes").select("id").eq("id", poll_vote_id).execute()
+def remove_vote(client: Client, poll_vote_id: str, requesting_user: str, is_admin: bool):
+    poll_vote = (
+        client.table("poll_votes")
+        .select("id, poll_id")
+        .eq("id", poll_vote_id)
+        .execute()
+    )
     if not poll_vote.data:
         raise HTTPException(status_code=404, detail="Vote not found")
+
+    if not is_admin:
+        poll = (
+            client.table("polls")
+            .select("created_by")
+            .eq("id", poll_vote.data[0]["poll_id"])
+            .execute()
+        )
+        if not poll.data or poll.data[0]["created_by"] != requesting_user:
+            raise HTTPException(status_code=403, detail="Not authorized to remove this vote")
 
     response = client.table("poll_votes").delete().eq("id", poll_vote_id).execute()
     return response.data[0]
