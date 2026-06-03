@@ -1,3 +1,4 @@
+from os import stat
 import uuid
 
 from fastapi import HTTPException
@@ -52,7 +53,13 @@ def delete_poll(client: Client, question: str, created_by: str):
 
 
 def get_all_polls(client: Client, user_id: str):
-    polls = client.table("polls").select("*").eq("approved", True).order("created_at", desc=True).execute()
+    polls = (
+        client.table("polls")
+        .select("*")
+        .eq("approved", True)
+        .order("created_at", desc=True)
+        .execute()
+    )
     if not polls.data:
         return []
 
@@ -242,7 +249,13 @@ def get_reddit_score_for(client: Client, poll_id: str):
 
 
 def get_unapproved_polls(client: Client):
-    polls = client.table("polls").select("*").eq("approved", False).order("created_at", desc=True).execute()
+    polls = (
+        client.table("polls")
+        .select("*")
+        .eq("approved", False)
+        .order("created_at", desc=True)
+        .execute()
+    )
     if not polls.data:
         return []
 
@@ -250,7 +263,9 @@ def get_unapproved_polls(client: Client):
     creator_ids = list({p["created_by"] for p in polls.data})
 
     options = client.table("options").select("*").in_("poll_id", poll_ids).execute()
-    users = client.table("users").select("id, username").in_("id", creator_ids).execute()
+    users = (
+        client.table("users").select("id, username").in_("id", creator_ids).execute()
+    )
 
     username_by_id: dict[str, str] = {u["id"]: u["username"] for u in users.data}
 
@@ -278,3 +293,12 @@ def approve_poll(client: Client, poll_id: str):
     data = response.data[0]
     data["poll_id"] = data.pop("id")
     return data
+
+
+def remove_vote(client: Client, poll_vote_id: str):
+    poll_vote = client.table("poll_votes").select("id").eq("id", poll_vote_id).execute()
+    if not poll_vote.data:
+        raise HTTPException(status_code=404, detail="Vote not found")
+
+    response = client.table("poll_votes").delete().eq("id", poll_vote_id).execute()
+    return response.data[0]

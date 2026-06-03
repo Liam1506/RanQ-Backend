@@ -111,3 +111,11 @@ class ApprovePollCreate(BaseModel):
 class ApprovePollResponse(BaseModel):
     poll_id: str
     approved: bool
+
+
+class RemoveVoteCreate(BaseModel):
+    poll_vote_id: str
+
+
+class RemoveVoteResponse(BaseModel):
+    id: str
