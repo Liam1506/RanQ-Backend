@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Write", "Bash(mkdir *)", "Bash(pip install *)", "Bash(pip *)"]
+  }
+}

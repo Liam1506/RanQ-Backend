@@ -281,6 +281,50 @@ def get_unapproved_polls(client: Client):
     return polls.data
 
 
+def get_my_polls(client: Client, user_id: str):
+    polls = client.table("polls").select("*").eq("created_by", user_id).order("created_at", desc=True).execute()
+    if not polls.data:
+        return []
+
+    poll_ids = [p["id"] for p in polls.data]
+
+    options = client.table("options").select("*").in_("poll_id", poll_ids).execute()
+    votes = (
+        client.table("poll_votes")
+        .select("option_id, poll_id")
+        .in_("poll_id", poll_ids)
+        .execute()
+    )
+    user_votes = (
+        client.table("poll_votes")
+        .select("poll_id, option_id")
+        .in_("poll_id", poll_ids)
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+    vote_counts: dict[str, int] = {}
+    for v in votes.data:
+        vote_counts[v["option_id"]] = vote_counts.get(v["option_id"], 0) + 1
+
+    user_vote_by_poll: dict[str, str] = {
+        v["poll_id"]: v["option_id"] for v in user_votes.data
+    }
+
+    options_by_poll: dict[str, list] = {}
+    for opt in options.data:
+        options_by_poll.setdefault(opt["poll_id"], []).append(
+            {**opt, "votes": vote_counts.get(opt["id"], 0)}
+        )
+
+    for poll in polls.data:
+        poll["options"] = options_by_poll.get(poll["id"], [])
+        poll["voted_option_id"] = user_vote_by_poll.get(poll["id"])
+        poll["creator_username"] = None  # always the requesting user
+
+    return polls.data
+
+
 def approve_poll(client: Client, poll_id: str):
     poll = client.table("polls").select("id").eq("id", poll_id).execute()
     if not poll.data:

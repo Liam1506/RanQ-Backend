@@ -24,6 +24,7 @@ from polls.db import (
     create_poll,
     delete_poll,
     get_all_polls,
+    get_my_polls,
     get_poll,
     get_reddit_score_for,
     remove_vote,
@@ -97,6 +98,12 @@ def reddit_vote(payload: RedditVoteCreate, user: str = Depends(auth_user)):
 )
 def reddit_score(payload: RedditScoreCreate, user: str = Depends(auth_user)):
     return get_reddit_score_for(db, payload.poll_id)
+
+@router.get(
+    "/getMyPolls", status_code=status.HTTP_200_OK, response_model=list[PollResponse]
+)
+def get_my(user: str = Depends(auth_user)):
+    return get_my_polls(db, user)
 
 
 @router.post(
