@@ -318,3 +318,149 @@ def test_get_unapproved_polls_empty(client):
     client.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = make_response([])
     result = get_unapproved_polls(client)
     assert result == []
+
+
+# --- retract_vote ---
+
+def test_retract_vote_success(client):
+    from polls.db import retract_vote
+    deleted = {"id": "v1", "poll_id": "p1", "user_id": "u1", "option_id": "o1"}
+
+    call_count = 0
+
+    def select_side():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # poll lookup
+            return make_response([{"id": "p1"}])
+        # existing vote lookup
+        return make_response([{"id": "v1"}])
+
+    client.table.return_value.select.return_value.eq.return_value.execute.side_effect = select_side
+    client.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.side_effect = select_side
+    client.table.return_value.delete.return_value.eq.return_value.execute.return_value = make_response([deleted])
+
+    result = retract_vote(client, "p1", "u1")
+    assert result == deleted
+
+
+def test_retract_vote_poll_not_found(client):
+    from polls.db import retract_vote
+    client.table.return_value.select.return_value.eq.return_value.execute.return_value = make_response([])
+    with pytest.raises(HTTPException) as exc:
+        retract_vote(client, "missing", "u1")
+    assert exc.value.status_code == 404
+    assert exc.value.detail == "Poll not found"
+
+
+def test_retract_vote_no_vote_found(client):
+    from polls.db import retract_vote
+
+    call_count = 0
+
+    def select_side():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # poll exists
+            return make_response([{"id": "p1"}])
+        # no vote for this user
+        return make_response([])
+
+    client.table.return_value.select.return_value.eq.return_value.execute.side_effect = select_side
+    client.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.side_effect = select_side
+
+    with pytest.raises(HTTPException) as exc:
+        retract_vote(client, "p1", "u1")
+    assert exc.value.status_code == 404
+    assert exc.value.detail == "No vote found for this poll"
+
+
+# --- remove_vote ---
+
+def test_remove_vote_admin_success(client):
+    """Admin can delete any vote without ownership check."""
+    from polls.db import remove_vote
+    deleted = {"id": "v1", "poll_id": "p1", "user_id": "u1", "option_id": "o1"}
+
+    client.table.return_value.select.return_value.eq.return_value.execute.return_value = make_response(
+        [{"id": "v1", "poll_id": "p1"}]
+    )
+    client.table.return_value.delete.return_value.eq.return_value.execute.return_value = make_response([deleted])
+
+    result = remove_vote(client, "v1", "admin-id", is_admin=True)
+    assert result == deleted
+
+
+def test_remove_vote_creator_success(client):
+    """Non-admin who is the poll's creator may delete a vote on their poll."""
+    from polls.db import remove_vote
+    deleted = {"id": "v1", "poll_id": "p1", "user_id": "u1", "option_id": "o1"}
+
+    call_count = 0
+
+    def select_side():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            # poll_vote lookup
+            return make_response([{"id": "v1", "poll_id": "p1"}])
+        # poll creator lookup
+        return make_response([{"created_by": "creator-id"}])
+
+    client.table.return_value.select.return_value.eq.return_value.execute.side_effect = select_side
+    client.table.return_value.delete.return_value.eq.return_value.execute.return_value = make_response([deleted])
+
+    result = remove_vote(client, "v1", "creator-id", is_admin=False)
+    assert result == deleted
+
+
+def test_remove_vote_not_found(client):
+    from polls.db import remove_vote
+    client.table.return_value.select.return_value.eq.return_value.execute.return_value = make_response([])
+    with pytest.raises(HTTPException) as exc:
+        remove_vote(client, "missing", "any-user", is_admin=True)
+    assert exc.value.status_code == 404
+    assert exc.value.detail == "Vote not found"
+
+
+def test_remove_vote_non_admin_not_creator(client):
+    """Non-admin who is not the poll's creator gets 403."""
+    from polls.db import remove_vote
+
+    call_count = 0
+
+    def select_side():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return make_response([{"id": "v1", "poll_id": "p1"}])
+        return make_response([{"created_by": "someone-else"}])
+
+    client.table.return_value.select.return_value.eq.return_value.execute.side_effect = select_side
+
+    with pytest.raises(HTTPException) as exc:
+        remove_vote(client, "v1", "intruder-id", is_admin=False)
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "Not authorized to remove this vote"
+
+
+def test_remove_vote_non_admin_poll_missing(client):
+    """If poll lookup yields no rows, non-admin still gets 403."""
+    from polls.db import remove_vote
+
+    call_count = 0
+
+    def select_side():
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return make_response([{"id": "v1", "poll_id": "p1"}])
+        return make_response([])
+
+    client.table.return_value.select.return_value.eq.return_value.execute.side_effect = select_side
+
+    with pytest.raises(HTTPException) as exc:
+        remove_vote(client, "v1", "anyone", is_admin=False)
+    assert exc.value.status_code == 403

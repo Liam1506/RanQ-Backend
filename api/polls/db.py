@@ -134,6 +134,30 @@ def get_poll(client: Client, question: str):
     return poll
 
 
+def retract_vote(client: Client, poll_id: str, user_id: str):
+    poll = client.table("polls").select("id").eq("id", poll_id).execute()
+    if not poll.data:
+        raise HTTPException(status_code=404, detail="Poll not found")
+
+    existing = (
+        client.table("poll_votes")
+        .select("id")
+        .eq("poll_id", poll_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="No vote found for this poll")
+
+    response = (
+        client.table("poll_votes")
+        .delete()
+        .eq("id", existing.data[0]["id"])
+        .execute()
+    )
+    return response.data[0]
+
+
 def vote_poll(client: Client, poll_id: str, option_id: str, user_id: str):
     poll = client.table("polls").select("id").eq("id", poll_id).execute()
     if not poll.data:

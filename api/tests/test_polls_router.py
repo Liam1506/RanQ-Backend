@@ -375,3 +375,184 @@ class TestGetUnapproved:
 
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/polls/retractVote
+# ---------------------------------------------------------------------------
+
+class TestRetractVote:
+
+    def test_retract_success(self, polls_client):
+        client, _ = polls_client
+        deleted = {
+            "id": "v1",
+            "poll_id": "poll-1",
+            "user_id": "test-user-id",
+            "option_id": "opt-1",
+        }
+
+        with patch("polls.router.retract_vote", return_value=deleted):
+            resp = client.request(
+                "DELETE",
+                "/api/polls/retractVote",
+                json={"poll_id": "poll-1"},
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == "v1"
+        assert resp.json()["poll_id"] == "poll-1"
+
+    def test_retract_poll_not_found(self, polls_client):
+        from fastapi import HTTPException
+
+        client, _ = polls_client
+
+        with patch(
+            "polls.router.retract_vote",
+            side_effect=HTTPException(status_code=404, detail="Poll not found"),
+        ):
+            resp = client.request(
+                "DELETE",
+                "/api/polls/retractVote",
+                json={"poll_id": "missing"},
+            )
+
+        assert resp.status_code == 404
+
+    def test_retract_no_vote(self, polls_client):
+        from fastapi import HTTPException
+
+        client, _ = polls_client
+
+        with patch(
+            "polls.router.retract_vote",
+            side_effect=HTTPException(
+                status_code=404, detail="No vote found for this poll"
+            ),
+        ):
+            resp = client.request(
+                "DELETE",
+                "/api/polls/retractVote",
+                json={"poll_id": "poll-1"},
+            )
+
+        assert resp.status_code == 404
+
+    def test_retract_requires_auth(self):
+        """Without dependency override the endpoint should reject missing token."""
+        from main import app
+
+        app.dependency_overrides.clear()
+        with TestClient(app, raise_server_exceptions=False) as c:
+            resp = c.request(
+                "DELETE",
+                "/api/polls/retractVote",
+                json={"poll_id": "poll-1"},
+            )
+        assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/polls/deleteVote  (creator OR admin)
+# ---------------------------------------------------------------------------
+
+class TestDeleteVote:
+
+    def _override_role(self, user_id: str, is_admin: bool):
+        """Helper: override auth_user_with_role on the running app."""
+        from main import app
+        from auth.authUser import auth_user_with_role
+
+        app.dependency_overrides[auth_user_with_role] = lambda: (user_id, is_admin)
+
+    def test_delete_vote_admin_success(self, polls_client):
+        client, _ = polls_client
+        self._override_role("admin-id", True)
+        deleted = {"id": "v1"}
+
+        with patch("polls.router.remove_vote", return_value=deleted) as mock_remove:
+            resp = client.request(
+                "DELETE",
+                "/api/polls/deleteVote",
+                json={"poll_vote_id": "v1"},
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == "v1"
+        # confirm router forwarded admin flag and user
+        args, kwargs = mock_remove.call_args
+        # signature: remove_vote(db, poll_vote_id, user, is_admin)
+        assert args[1] == "v1"
+        assert args[2] == "admin-id"
+        assert args[3] is True
+
+    def test_delete_vote_creator_success(self, polls_client):
+        client, _ = polls_client
+        self._override_role("creator-id", False)
+        deleted = {"id": "v1"}
+
+        with patch("polls.router.remove_vote", return_value=deleted) as mock_remove:
+            resp = client.request(
+                "DELETE",
+                "/api/polls/deleteVote",
+                json={"poll_vote_id": "v1"},
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == "v1"
+        args, _ = mock_remove.call_args
+        assert args[2] == "creator-id"
+        assert args[3] is False
+
+    def test_delete_vote_forbidden(self, polls_client):
+        """Non-admin, non-creator → db layer raises 403, router propagates it."""
+        from fastapi import HTTPException
+
+        client, _ = polls_client
+        self._override_role("intruder-id", False)
+
+        with patch(
+            "polls.router.remove_vote",
+            side_effect=HTTPException(
+                status_code=403, detail="Not authorized to remove this vote"
+            ),
+        ):
+            resp = client.request(
+                "DELETE",
+                "/api/polls/deleteVote",
+                json={"poll_vote_id": "v1"},
+            )
+
+        assert resp.status_code == 403
+
+    def test_delete_vote_not_found(self, polls_client):
+        from fastapi import HTTPException
+
+        client, _ = polls_client
+        self._override_role("admin-id", True)
+
+        with patch(
+            "polls.router.remove_vote",
+            side_effect=HTTPException(status_code=404, detail="Vote not found"),
+        ):
+            resp = client.request(
+                "DELETE",
+                "/api/polls/deleteVote",
+                json={"poll_vote_id": "missing"},
+            )
+
+        assert resp.status_code == 404
+
+    def test_delete_vote_requires_auth(self):
+        """No bearer token → 401."""
+        from main import app
+
+        app.dependency_overrides.clear()
+        with TestClient(app, raise_server_exceptions=False) as c:
+            resp = c.request(
+                "DELETE",
+                "/api/polls/deleteVote",
+                json={"poll_vote_id": "v1"},
+            )
+        assert resp.status_code == 401

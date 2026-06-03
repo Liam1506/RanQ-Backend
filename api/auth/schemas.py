@@ -113,6 +113,17 @@ class ApprovePollResponse(BaseModel):
     approved: bool
 
 
+class RetractVoteCreate(BaseModel):
+    poll_id: str
+
+
+class RetractVoteResponse(BaseModel):
+    id: str
+    poll_id: str
+    user_id: str
+    option_id: str
+
+
 class RemoveVoteCreate(BaseModel):
     poll_vote_id: str
 

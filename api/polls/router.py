@@ -9,6 +9,8 @@ from auth.schemas import (
     PollResponse,
     RemoveVoteCreate,
     RemoveVoteResponse,
+    RetractVoteCreate,
+    RetractVoteResponse,
     VoteCreate,
     VoteResponse,
     RedditVoteResponse,
@@ -28,6 +30,7 @@ from polls.db import (
     get_poll,
     get_reddit_score_for,
     remove_vote,
+    retract_vote,
     vote_poll,
     get_all_comments_for,
     reddit_vote_poll,
@@ -66,6 +69,13 @@ def get_all(user: str = Depends(auth_user)):
 @router.post("/vote", status_code=status.HTTP_201_CREATED, response_model=VoteResponse)
 def vote(payload: VoteCreate, user: str = Depends(auth_user)):
     return vote_poll(db, payload.poll_id, payload.option_id, user)
+
+
+@router.delete(
+    "/retractVote", status_code=status.HTTP_200_OK, response_model=RetractVoteResponse
+)
+def retract(payload: RetractVoteCreate, user: str = Depends(auth_user)):
+    return retract_vote(db, payload.poll_id, user)
 
 
 @router.post(
