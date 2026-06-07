@@ -232,7 +232,7 @@ def reddit_vote_poll(client: Client, poll_id: str, score: int, user_id: str):
     return response.data[0]
 
 
-def get_reddit_score_for(client: Client, poll_id: str):
+def get_reddit_score_for(client: Client, poll_id: str, user_id: str):
     poll = client.table("polls").select("id").eq("id", poll_id).execute()
     if not poll.data:
         raise HTTPException(status_code=404, detail="Poll not found")
@@ -243,6 +243,7 @@ def get_reddit_score_for(client: Client, poll_id: str):
         .eq("poll_id", poll_id)
         .execute()
     )
+    votes = user_id in response.data["user_id"]
     total = sum(item["voting_score"] for item in response.data)
     print(total)
     return {"total_score": total}

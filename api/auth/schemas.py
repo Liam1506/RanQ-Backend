@@ -98,10 +98,14 @@ class RedditVoteCreate(BaseModel):
 
 class RedditScoreCreate(BaseModel):
     poll_id: str
+    user_id: str
 
 
 class RedditScoreResponse(BaseModel):
     total_score: int
+    poll_id: str
+    user_id: str
+    user_has_voted: bool
 
 
 class ApprovePollCreate(BaseModel):
