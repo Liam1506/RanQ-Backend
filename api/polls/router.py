@@ -9,6 +9,8 @@ from auth.schemas import (
     PollResponse,
     RemoveVoteCreate,
     RemoveVoteResponse,
+    RetractVoteCreate,
+    RetractVoteResponse,
     VoteCreate,
     VoteResponse,
     RedditVoteResponse,
@@ -24,16 +26,18 @@ from polls.db import (
     create_poll,
     delete_poll,
     get_all_polls,
+    get_my_polls,
     get_poll,
     get_reddit_score_for,
     remove_vote,
+    retract_vote,
     vote_poll,
     get_all_comments_for,
     reddit_vote_poll,
     approve_poll,
     get_unapproved_polls,
 )
-from auth.authUser import auth_user, auth_admin
+from auth.authUser import auth_user, auth_admin, auth_user_with_role
 
 router = APIRouter(prefix="/api/polls", tags=["polls"])
 
@@ -67,6 +71,13 @@ def vote(payload: VoteCreate, user: str = Depends(auth_user)):
     return vote_poll(db, payload.poll_id, payload.option_id, user)
 
 
+@router.delete(
+    "/retractVote", status_code=status.HTTP_200_OK, response_model=RetractVoteResponse
+)
+def retract(payload: RetractVoteCreate, user: str = Depends(auth_user)):
+    return retract_vote(db, payload.poll_id, user)
+
+
 @router.post(
     "/comment", status_code=status.HTTP_201_CREATED, response_model=CommentResponse
 )
@@ -98,6 +109,12 @@ def reddit_vote(payload: RedditVoteCreate, user: str = Depends(auth_user)):
 def reddit_score(payload: RedditScoreCreate, user: str = Depends(auth_user)):
     return get_reddit_score_for(db, payload.poll_id)
 
+@router.get(
+    "/getMyPolls", status_code=status.HTTP_200_OK, response_model=list[PollResponse]
+)
+def get_my(user: str = Depends(auth_user)):
+    return get_my_polls(db, user)
+
 
 @router.post(
     "/approvePoll", status_code=status.HTTP_200_OK, response_model=ApprovePollResponse
@@ -116,5 +133,6 @@ def get_unapproved(user: str = Depends(auth_admin)):
 @router.delete(
     "/deleteVote", status_code=status.HTTP_200_OK, response_model=RemoveVoteResponse
 )
-def remove(payload: RemoveVoteCreate, user: str = Depends(auth_admin)):
-    return remove_vote(db, payload.poll_vote_id)
+def remove(payload: RemoveVoteCreate, user_role: tuple = Depends(auth_user_with_role)):
+    user, is_admin = user_role
+    return remove_vote(db, payload.poll_vote_id, user, is_admin)
