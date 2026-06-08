@@ -70,7 +70,6 @@ def get_all(user: str = Depends(auth_user)):
 def vote(payload: VoteCreate, user: str = Depends(auth_user)):
     return vote_poll(db, payload.poll_id, payload.option_id, user)
 
-
 @router.delete(
     "/retractVote", status_code=status.HTTP_200_OK, response_model=RetractVoteResponse
 )

@@ -46,6 +46,8 @@ class PollResponse(BaseModel):
     approved: bool
     options: list[OptionResponse] = []
     voted_option_id: Optional[str] = None
+    total_up_down_score: Optional[int] = None
+    user_vote_up_down: Optional[int] = None
 
 
 class VoteCreate(BaseModel):

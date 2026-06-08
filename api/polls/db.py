@@ -80,9 +80,29 @@ def get_all_polls(client: Client, user_id: str):
         .eq("user_id", user_id)
         .execute()
     )
+    up_down_votes = (
+        client.table("up_down_votes")
+        .select("id", "poll_id", "voting_score")
+        .in_("poll_id", poll_ids)
+        .execute()
+    )
+    up_down_user_votes = (
+        client.table("up_down_votes")
+        .select("*")
+        .in_("poll_id", poll_ids)
+        .eq("user_id", user_id)
+        .execute()
+    )
     users = (
         client.table("users").select("id, username").in_("id", creator_ids).execute()
     )
+    score_by_poll: dict[str, int] = {}
+    for v in up_down_votes.data:
+        score_by_poll[v["poll_id"]] = score_by_poll.get(v["poll_id"], 0) + v["voting_score"]
+
+    user_up_down_by_poll: dict[str, int] = {
+        v["poll_id"]: v["voting_score"] for v in up_down_user_votes.data
+    }
 
     username_by_id: dict[str, str] = {u["id"]: u["username"] for u in users.data}
 
@@ -104,6 +124,8 @@ def get_all_polls(client: Client, user_id: str):
         poll["options"] = options_by_poll.get(poll["id"], [])
         poll["voted_option_id"] = user_vote_by_poll.get(poll["id"])
         poll["creator_username"] = username_by_id.get(poll["created_by"])
+        poll["total_up_down_score"] = score_by_poll.get(poll["id"], 0)
+        poll["user_vote_up_down"] = user_up_down_by_poll.get(poll["id"])
 
     return polls.data
 
