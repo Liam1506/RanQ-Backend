@@ -31,6 +31,10 @@ class PollCreate(BaseModel):
     options: list[str]
 
 
+class PollDelete(BaseModel):
+    id: str
+
+
 class OptionResponse(BaseModel):
     id: str
     option: str

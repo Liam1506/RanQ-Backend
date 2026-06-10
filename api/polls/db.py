@@ -31,11 +31,12 @@ def create_poll(client: Client, question: str, options: list[str], created_by: s
     return poll_resp.data[0]
 
 
-def delete_poll(client: Client, question: str, created_by: str):
+# TODO maybe add admin auth or only created_by user can delete?
+def delete_poll(client: Client, poll_id: str, created_by: str):
     existing = (
         client.table("polls")
         .select("*")
-        .eq("question", question)
+        .eq("id", poll_id)
         .eq("created_by", created_by)
         .execute()
     )
@@ -45,7 +46,7 @@ def delete_poll(client: Client, question: str, created_by: str):
     response = (
         client.table("polls")
         .delete()
-        .eq("question", question)
+        .eq("id", poll_id)
         .eq("created_by", created_by)
         .execute()
     )

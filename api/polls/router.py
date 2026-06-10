@@ -6,6 +6,7 @@ from auth.schemas import (
     CommentCreate,
     CommentResponse,
     PollCreate,
+    PollDelete,
     PollResponse,
     RemoveVoteCreate,
     RemoveVoteResponse,
@@ -50,8 +51,8 @@ def create(payload: PollCreate, user: str = Depends(auth_user)):
 
 
 @router.delete("/delete", status_code=status.HTTP_200_OK, response_model=PollResponse)
-def delete(payload: PollCreate, user: str = Depends(auth_user)):
-    return delete_poll(db, payload.question, user)
+def delete(payload: PollDelete, user: str = Depends(auth_user)):
+    return delete_poll(db, payload.id, user)
 
 
 @router.get("/get", status_code=status.HTTP_200_OK, response_model=PollResponse)
