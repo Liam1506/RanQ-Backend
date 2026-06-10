@@ -48,6 +48,7 @@ class PollResponse(BaseModel):
     voted_option_id: Optional[str] = None
     total_up_down_score: Optional[int] = None
     user_vote_up_down: Optional[int] = None
+    category: Optional[str] = None
 
 
 class VoteCreate(BaseModel):

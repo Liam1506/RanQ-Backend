@@ -70,8 +70,9 @@ def get_all(user: str = Depends(auth_user)):
 def vote(payload: VoteCreate, user: str = Depends(auth_user)):
     return vote_poll(db, payload.poll_id, payload.option_id, user)
 
+
 @router.delete(
-    "/retractVote", status_code=status.HTTP_200_OK, response_model=RetractVoteResponse
+    "/deleteVote", status_code=status.HTTP_200_OK, response_model=RetractVoteResponse
 )
 def retract(payload: RetractVoteCreate, user: str = Depends(auth_user)):
     return retract_vote(db, payload.poll_id, user)
@@ -107,6 +108,7 @@ def reddit_vote(payload: RedditVoteCreate, user: str = Depends(auth_user)):
 )
 def reddit_score(payload: RedditScoreCreate, user: str = Depends(auth_user)):
     return get_reddit_score_for(db, payload.poll_id)
+
 
 @router.get(
     "/getMyPolls", status_code=status.HTTP_200_OK, response_model=list[PollResponse]

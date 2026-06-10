@@ -64,6 +64,7 @@ def get_all_polls(client: Client, user_id: str):
         return []
 
     poll_ids = [p["id"] for p in polls.data]
+    category_ids = [p["category_id"] for p in polls.data if p.get("category_id")]
     creator_ids = list({p["created_by"] for p in polls.data})
 
     options = client.table("options").select("*").in_("poll_id", poll_ids).execute()
@@ -93,12 +94,23 @@ def get_all_polls(client: Client, user_id: str):
         .eq("user_id", user_id)
         .execute()
     )
+    poll_categorys = (
+        client.table("poll_category").select("*").in_("id", category_ids).execute()
+        if category_ids
+        else type("obj", (), {"data": []})()
+    )
     users = (
         client.table("users").select("id, username").in_("id", creator_ids).execute()
     )
     score_by_poll: dict[str, int] = {}
     for v in up_down_votes.data:
-        score_by_poll[v["poll_id"]] = score_by_poll.get(v["poll_id"], 0) + v["voting_score"]
+        score_by_poll[v["poll_id"]] = (
+            score_by_poll.get(v["poll_id"], 0) + v["voting_score"]
+        )
+
+    category_by_poll: dict[str, str] = {}
+    for c in poll_categorys.data:
+        category_by_poll[c["id"]] = c["title"]
 
     user_up_down_by_poll: dict[str, int] = {
         v["poll_id"]: v["voting_score"] for v in up_down_user_votes.data
@@ -126,6 +138,7 @@ def get_all_polls(client: Client, user_id: str):
         poll["creator_username"] = username_by_id.get(poll["created_by"])
         poll["total_up_down_score"] = score_by_poll.get(poll["id"], 0)
         poll["user_vote_up_down"] = user_up_down_by_poll.get(poll["id"])
+        poll["category"] = category_by_poll.get(poll["category_id"])
 
     return polls.data
 
@@ -157,26 +170,15 @@ def get_poll(client: Client, question: str):
 
 
 def retract_vote(client: Client, poll_id: str, user_id: str):
-    poll = client.table("polls").select("id").eq("id", poll_id).execute()
-    if not poll.data:
-        raise HTTPException(status_code=404, detail="Poll not found")
-
-    existing = (
+    response = (
         client.table("poll_votes")
-        .select("id")
+        .delete()
         .eq("poll_id", poll_id)
         .eq("user_id", user_id)
         .execute()
     )
-    if not existing.data:
+    if not response.data:
         raise HTTPException(status_code=404, detail="No vote found for this poll")
-
-    response = (
-        client.table("poll_votes")
-        .delete()
-        .eq("id", existing.data[0]["id"])
-        .execute()
-    )
     return response.data[0]
 
 
@@ -197,13 +199,16 @@ def vote_poll(client: Client, poll_id: str, option_id: str, user_id: str):
 
     existing = (
         client.table("poll_votes")
-        .select("id")
+        .select("id, option_id, poll_id, user_id")
         .eq("poll_id", poll_id)
         .eq("user_id", user_id)
         .execute()
     )
     if existing.data:
-        raise HTTPException(status_code=409, detail="Already voted on this poll")
+        existing_vote = existing.data[0]
+        client.table("poll_votes").delete().eq("id", existing_vote["id"]).execute()
+        if existing_vote["option_id"] == option_id:
+            return existing_vote
 
     response = (
         client.table("poll_votes")
@@ -261,13 +266,16 @@ def reddit_vote_poll(client: Client, poll_id: str, score: int, user_id: str):
 
     existing = (
         client.table("up_down_votes")
-        .select("id")
+        .select("id, voting_score")
         .eq("poll_id", poll_id)
         .eq("user_id", user_id)
         .execute()
     )
     if existing.data:
-        raise HTTPException(status_code=409, detail="Already voted on this poll")
+        existing_vote = existing.data[0]
+        if existing_vote["voting_score"] == score:
+            return existing_vote
+        client.table("up_down_votes").delete().eq("id", existing_vote["id"]).execute()
 
     response = (
         client.table("up_down_votes")
@@ -329,7 +337,13 @@ def get_unapproved_polls(client: Client):
 
 
 def get_my_polls(client: Client, user_id: str):
-    polls = client.table("polls").select("*").eq("created_by", user_id).order("created_at", desc=True).execute()
+    polls = (
+        client.table("polls")
+        .select("*")
+        .eq("created_by", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
     if not polls.data:
         return []
 
@@ -386,7 +400,9 @@ def approve_poll(client: Client, poll_id: str):
     return data
 
 
-def remove_vote(client: Client, poll_vote_id: str, requesting_user: str, is_admin: bool):
+def remove_vote(
+    client: Client, poll_vote_id: str, requesting_user: str, is_admin: bool
+):
     poll_vote = (
         client.table("poll_votes")
         .select("id, poll_id")
@@ -404,7 +420,9 @@ def remove_vote(client: Client, poll_vote_id: str, requesting_user: str, is_admi
             .execute()
         )
         if not poll.data or poll.data[0]["created_by"] != requesting_user:
-            raise HTTPException(status_code=403, detail="Not authorized to remove this vote")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to remove this vote"
+            )
 
     response = client.table("poll_votes").delete().eq("id", poll_vote_id).execute()
     return response.data[0]
